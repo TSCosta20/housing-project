@@ -32,7 +32,7 @@ jobs:
         run: pip install -r backend/requirements.txt
 
       - name: Install Playwright Chromium
-        run: python -m playwright install chromium
+        run: python -m playwright install --with-deps chromium
 
       - name: Run daily ingestion
         env:
