@@ -40,4 +40,5 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RUN_HOUR_LISBON: "3"
           RUN_MINUTE_LISBON: "0"
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
         run: python -m backend.jobs.daily_run
