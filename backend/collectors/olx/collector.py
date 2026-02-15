@@ -532,9 +532,9 @@ def _extract_param_value(params: Any, keys: tuple[str, ...]) -> Any:
 
 def _listing_type_from_search_url(url: str) -> str | None:
     lowered = url.lower()
-    if any(token in lowered for token in ("/arrendar", "/arrendamento", "/alugar", "/arrendar-")):
+    if any(token in lowered for token in ("arrendar", "arrendamento", "alugar", "para-arrendar", "para-alugar")):
         return "rent"
-    if any(token in lowered for token in ("/venda", "/comprar", "/a-venda")):
+    if any(token in lowered for token in ("venda", "comprar", "a-venda", "para-venda")):
         return "buy"
     return None
 

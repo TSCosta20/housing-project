@@ -3,6 +3,7 @@ import json
 from backend.collectors.olx.collector import (
     _extract_items_from_prerendered_state,
     _infer_listing_type,
+    _listing_type_from_search_url,
 )
 
 
@@ -47,3 +48,7 @@ def test_extract_items_from_prerendered_state_parses_ads():
 def test_infer_listing_type_detects_rent():
     assert _infer_listing_type({"title": "Apartamento para arrendar"}) == "rent"
     assert _infer_listing_type({"title": "Apartamento T2 em venda"}) == "buy"
+
+
+def test_listing_type_from_search_url_matches_venda_routes():
+    assert _listing_type_from_search_url("https://www.olx.pt/imoveis/apartamento-casa-a-venda/") == "buy"
