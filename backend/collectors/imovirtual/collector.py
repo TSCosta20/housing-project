@@ -145,7 +145,7 @@ def _extract_offers_from_schema_graph(page_html: str, listing_type: str) -> list
 
 
 def _extract_external_id(url: str) -> str | None:
-    match = re.search(r"-ID([A-Za-z0-9]+)$", url)
+    match = re.search(r"-ID([A-Za-z0-9]+)(?:$|[/?#])", url)
     if match:
         return match.group(1)
     return None
@@ -198,13 +198,34 @@ def _set_page_query(url: str, page: int) -> str:
 
 def _extract_listing_urls(page_html: str) -> list[str]:
     seen: dict[str, None] = {}
-    pattern = re.compile(r'href="(?P<href>/pt/anuncio/[^"]+|https://www\.imovirtual\.com/pt/anuncio/[^"]+)"', re.I)
-    for match in pattern.finditer(page_html):
-        href = match.group("href")
-        absolute = href if href.startswith("http") else f"https://www.imovirtual.com{href}"
-        cleaned = absolute.split("?")[0].rstrip("/")
-        seen[cleaned] = None
+    patterns = [
+        re.compile(
+            r'href="(?P<href>/pt/(?:anuncio|imovel)/[^"]+|https://www\.imovirtual\.com/pt/(?:anuncio|imovel)/[^"]+)"',
+            re.I,
+        ),
+        re.compile(
+            r"(?P<href>https?://www\.imovirtual\.com/pt/(?:anuncio|imovel)/[^\s\"'<>]+|/pt/(?:anuncio|imovel)/[^\s\"'<>]+)",
+            re.I,
+        ),
+        re.compile(
+            r"(?P<href>https:\\/\\/www\.imovirtual\.com\\/pt\\/(?:anuncio|imovel)\\/[^\"'<> ]+|\\/pt\\/(?:anuncio|imovel)\\/[^\"'<> ]+)",
+            re.I,
+        ),
+    ]
+    for pattern in patterns:
+        for match in pattern.finditer(page_html):
+            _add_listing_url_candidate(seen, match.group("href"))
     return list(seen.keys())
+
+
+def _add_listing_url_candidate(bucket: dict[str, None], href: str) -> None:
+    raw = href.replace("\\/", "/")
+    absolute = raw if raw.startswith("http") else f"https://www.imovirtual.com{raw}"
+    cleaned = absolute.split("?")[0].rstrip("/")
+    lowered = cleaned.lower()
+    if "/pt/anuncio/" not in lowered and "/pt/imovel/" not in lowered:
+        return
+    bucket[cleaned] = None
 
 
 def _fetch_from_details(client: httpx.Client, urls: list[str], listing_type: str) -> list[dict[str, Any]]:
