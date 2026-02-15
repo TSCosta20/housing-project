@@ -93,8 +93,8 @@ class ImovirtualCollector(Collector):
             size_m2=_safe_float(raw_item.get("size_m2")),
             bedrooms=_safe_int(raw_item.get("bedrooms")),
             bathrooms=None,
-            lat=None,
-            lng=None,
+            lat=_safe_float(raw_item.get("lat") or raw_item.get("latitude")),
+            lng=_safe_float(raw_item.get("lng") or raw_item.get("lon") or raw_item.get("longitude")),
             location_text=raw_item.get("location_text"),
             contact_phone=None,
             contact_email=None,
@@ -124,6 +124,9 @@ def _extract_offers_from_schema_graph(page_html: str, listing_type: str) -> list
             item_offered = offer.get("itemOffered") if isinstance(offer.get("itemOffered"), dict) else {}
             floor_size = item_offered.get("floorSize") if isinstance(item_offered.get("floorSize"), dict) else {}
             address = item_offered.get("address") if isinstance(item_offered.get("address"), dict) else {}
+            geo = item_offered.get("geo") if isinstance(item_offered.get("geo"), dict) else {}
+            if not geo:
+                geo = offer.get("geo") if isinstance(offer.get("geo"), dict) else {}
             price = offer.get("price")
             if price is None:
                 offers_obj = offer.get("offers") if isinstance(offer.get("offers"), dict) else {}
@@ -139,6 +142,8 @@ def _extract_offers_from_schema_graph(page_html: str, listing_type: str) -> list
                     "size_m2": floor_size.get("value") or offer.get("size_m2"),
                     "bedrooms": item_offered.get("numberOfRooms") or offer.get("numberOfRooms"),
                     "location_text": address.get("addressLocality") or offer.get("location_text"),
+                    "lat": geo.get("latitude") or offer.get("lat"),
+                    "lng": geo.get("longitude") or offer.get("lng") or offer.get("lon"),
                 }
             )
     return result
@@ -275,6 +280,34 @@ def _extract_detail_item(url: str, detail_html: str, listing_type: str) -> dict[
     location_match = re.search(r'"addressLocality"\s*:\s*"(?P<loc>[^"]+)"', detail_html)
     if location_match:
         location_text = location_match.group("loc")
+    else:
+        region_match = re.search(r'"addressRegion"\s*:\s*"(?P<region>[^"]+)"', detail_html)
+        if region_match:
+            location_text = region_match.group("region")
+
+    lat = None
+    lng = None
+    geo_match = re.search(
+        r'"geo"\s*:\s*\{(?P<geo>.*?)\}',
+        detail_html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if geo_match:
+        geo_block = geo_match.group("geo")
+        lat_match = re.search(
+            r'"latitude"\s*:\s*(?P<lat>-?[0-9]+(?:\.[0-9]+)?)',
+            geo_block,
+            flags=re.IGNORECASE,
+        )
+        lng_match = re.search(
+            r'"longitude"\s*:\s*(?P<lng>-?[0-9]+(?:\.[0-9]+)?)',
+            geo_block,
+            flags=re.IGNORECASE,
+        )
+        if lat_match:
+            lat = _safe_float(lat_match.group("lat"))
+        if lng_match:
+            lng = _safe_float(lng_match.group("lng"))
 
     return {
         "listing_type": listing_type,
@@ -285,6 +318,8 @@ def _extract_detail_item(url: str, detail_html: str, listing_type: str) -> dict[
         "size_m2": size_m2,
         "bedrooms": rooms,
         "location_text": location_text,
+        "lat": lat,
+        "lng": lng,
     }
 
 
