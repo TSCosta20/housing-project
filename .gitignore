@@ -1,0 +1,43 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+
+# Android/build outputs
+android-app/.gradle/
+android-app/**/build/
+android-app/app/build/
+*.apk
+
+# Local env/secrets
+.env
+.env.*
+!.env.example
+web-app/.env
+backend/.env
+*.key
+*.pem
+*credentials*.json
+*service-account*.json
+*firebase-adminsdk*.json
+backend/imowatch-firebase-adminsdk-fbsvc-a19814bbf2.json
+google-services.json
+
+# Logs/temp
+*.log
+tmp/

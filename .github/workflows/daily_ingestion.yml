@@ -1,0 +1,43 @@
+name: Daily Ingestion
+
+on:
+  schedule:
+    # 03:00 Europe/Lisbon across DST:
+    # - 03:00 UTC in winter (WET)
+    # - 02:00 UTC in summer (WEST)
+    - cron: "0 2 * * *"
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-ingestion
+  cancel-in-progress: false
+
+jobs:
+  run-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium
+
+      - name: Run daily ingestion
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RUN_HOUR_LISBON: "3"
+          RUN_MINUTE_LISBON: "0"
+        run: python -m backend.jobs.daily_run
